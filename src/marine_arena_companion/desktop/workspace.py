@@ -773,9 +773,9 @@ class NativeWorkspace:
         row = tk.Frame(editor, bg=PANEL)
         row.pack(fill="x")
         time_box = tk.Frame(row, bg=PANEL)
-        time_box.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        time_box.pack(side="left", fill="x", expand=True, padx=(0, 5), anchor="n")
         category_box = tk.Frame(row, bg=PANEL)
-        category_box.pack(side="left", fill="x", expand=True, padx=(5, 0))
+        category_box.pack(side="left", fill="x", expand=True, padx=(5, 0), anchor="n")
         self._form_label(time_box, "Match elapsed")
         ttk.Entry(time_box, textvariable=self.reminder_time_var).pack(fill="x", pady=(4, 10))
         tk.Label(
