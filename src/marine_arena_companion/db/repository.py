@@ -11,7 +11,7 @@ from typing import Any, Iterator
 from marine_arena_companion.analysis.identity import split_player_name
 from marine_arena_companion.timing import MAX_ELAPSED_SECONDS
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 REMINDER_CATEGORIES = {"unit_combo", "hero", "elite", "custom"}
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS replays (
@@ -112,6 +112,7 @@ CREATE INDEX IF NOT EXISTS idx_raw_events_replay ON raw_events(replay_id);
 CREATE INDEX IF NOT EXISTS idx_failures_path ON scan_failures(path);
 CREATE INDEX IF NOT EXISTS idx_overlay_reminders_enabled_time ON overlay_reminders(enabled,at_seconds,id);
 CREATE INDEX IF NOT EXISTS idx_replay_files_replay ON replay_files(replay_id);
+CREATE INDEX IF NOT EXISTS idx_replay_players_player_replay ON replay_players(player_id,replay_id);
 """
 
 
@@ -162,6 +163,7 @@ class Repository:
                 for statement in _SCHEMA.split(";"):
                     if any(name in statement for name in (
                         "overlay_reminders", "idx_overlay_reminders", "replay_files", "idx_replay_files",
+                        "idx_replay_players_player_replay",
                     )):
                         if statement.strip():
                             conn.execute(statement)

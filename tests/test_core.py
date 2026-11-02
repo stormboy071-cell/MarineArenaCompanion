@@ -214,6 +214,36 @@ def test_version_one_database_adds_reminder_table_without_data_loss(tmp_path: Pa
         assert conn.execute("SELECT COUNT(*) FROM overlay_reminders").fetchone()[0] == 0
 
 
+def test_version_four_database_adds_player_lookup_index_without_data_loss(tmp_path: Path) -> None:
+    database = tmp_path / "schema-v4.sqlite"
+    repository = Repository(database)
+    replay_id = repository.create_replay(
+        tmp_path / "kept.SC2Replay", "kept-player-index-digest", 10, None,
+    )
+    assert replay_id is not None
+    player_id = repository.add_player(replay_id, "kept-player", "KeptPlayer", 1, 1, "Victory")
+    with repository.connection() as conn:
+        conn.execute("DROP INDEX idx_replay_players_player_replay")
+        conn.execute("PRAGMA user_version=4")
+
+    migrated = Repository(database)
+    assert migrated.count_opponents() == 1
+    assert migrated.opponents(10, sort="games")[0]["id"] == player_id
+    with migrated.connection() as conn:
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        plan = conn.execute(
+            "EXPLAIN QUERY PLAN SELECT replay_id FROM replay_players WHERE player_id=?",
+            (player_id,),
+        ).fetchall()
+        retained = conn.execute(
+            "SELECT replay_id FROM replay_players WHERE player_id=?", (player_id,),
+        ).fetchone()
+
+    assert version == SCHEMA_VERSION
+    assert retained["replay_id"] == replay_id
+    assert any("idx_replay_players_player_replay" in row["detail"] for row in plan)
+
+
 def test_overlay_reminders_create_filter_edit_and_delete(tmp_path: Path) -> None:
     repository = Repository(tmp_path / "reminders.sqlite")
     first = repository.create_reminder(
