@@ -159,11 +159,11 @@ def _select_local_profile(base_dir: Path, profiles: list[str] | None = None) -> 
     root.bind("<Return>", lambda _event: open_selected() if profiles else add_profile())
     root.bind("<Escape>", lambda _event: finish(None))
     root.protocol("WM_DELETE_WINDOW", lambda: finish(None))
-    root.geometry("560x390")
+    root.geometry("560x470")
     root.update_idletasks()
     x = (root.winfo_screenwidth() - root.winfo_reqwidth()) // 2
     y = (root.winfo_screenheight() - root.winfo_reqheight()) // 2
-    root.geometry(f"560x390+{x}+{y}")
+    root.geometry(f"560x470+{x}+{y}")
     root.deiconify()
     root.lift()
     root.focus_force()
