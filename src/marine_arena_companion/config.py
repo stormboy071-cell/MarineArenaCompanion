@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -23,6 +24,34 @@ def app_data_dir() -> Path:
     if root:
         return Path(root) / "MarineArenaCompanion"
     return Path.home() / ".local" / "share" / "MarineArenaCompanion"
+
+
+def local_profile_data_dir(base_dir: Path, battle_tag: str) -> Path:
+    tag = validate_battle_tag(battle_tag)
+    legacy_config = base_dir / "config.json"
+    if legacy_config.exists():
+        legacy_tag = AppConfig.load(legacy_config).battle_tag
+        if not legacy_tag or legacy_tag.casefold() == tag.casefold():
+            return base_dir
+    elif (base_dir / "marine_arena.db").exists():
+        return base_dir
+    profile_id = hashlib.sha256(tag.casefold().encode("utf-8")).hexdigest()[:16]
+    return base_dir / "profiles" / profile_id
+
+
+def local_profile_tags(base_dir: Path) -> list[str]:
+    config_paths = [base_dir / "config.json"]
+    profiles_dir = base_dir / "profiles"
+    if profiles_dir.is_dir():
+        config_paths.extend(profiles_dir.glob("*/config.json"))
+    tags = {
+        config.battle_tag
+        for path in config_paths
+        if path.is_file()
+        for config in (AppConfig.load(path),)
+        if config.battle_tag
+    }
+    return sorted(tags, key=str.casefold)
 
 
 @dataclass

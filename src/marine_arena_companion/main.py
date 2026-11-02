@@ -6,16 +6,20 @@ import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 import tkinter as tk
+from tkinter import ttk
 
 from marine_arena_companion.api import CompanionHTTPServer
 from marine_arena_companion.config import (
     ConfigStore,
     app_data_dir,
+    local_profile_data_dir,
+    local_profile_tags,
     validate_battle_tag,
     validate_replay_folder,
 )
 from marine_arena_companion.db.repository import Repository
 from marine_arena_companion.desktop.app import DesktopApp
+from marine_arena_companion.instance import ProfileInstanceLock
 from marine_arena_companion.overlay import OverlaySession
 from marine_arena_companion.replay.scanner import ReplayScanner
 from marine_arena_companion.replay.semantics import SemanticDictionary
@@ -34,37 +38,39 @@ def _configure_logging(data_dir: Path) -> None:
         root.addHandler(logging.StreamHandler())
 
 
-def _require_local_profile(config: ConfigStore) -> bool:
-    if config.get().battle_tag:
-        return True
+def _select_local_profile(base_dir: Path) -> str | None:
+    profiles = local_profile_tags(base_dir)
     root = tk.Tk()
     root.withdraw()
     dialog = tk.Toplevel(root)
-    dialog.title("Set up your profile · Marine Arena Companion")
+    dialog.title("Choose a profile · Marine Arena Companion")
     dialog.configure(bg="#09111a")
     dialog.resizable(False, False)
     dialog.transient(root)
-    dialog.protocol("WM_DELETE_WINDOW", lambda: finish(False))
-    result = {"saved": False}
-    tag = tk.StringVar()
+    result: dict[str, str | None] = {"tag": None}
+    selected = tk.StringVar(value=profiles[0] if profiles else "")
+    new_tag = tk.StringVar()
     error = tk.StringVar()
 
-    def finish(saved: bool) -> None:
-        result["saved"] = saved
+    def finish(tag: str | None) -> None:
+        result["tag"] = tag
         if dialog.winfo_exists():
             dialog.grab_release()
             dialog.destroy()
 
-    def save_profile(_event: tk.Event | None = None) -> str:
+    def open_selected() -> None:
+        try:
+            finish(validate_battle_tag(selected.get()))
+        except ValueError as exc:
+            error.set(str(exc))
+
+    def add_profile() -> None:
         error.set("")
         try:
-            config.update(battle_tag=validate_battle_tag(tag.get()))
+            finish(validate_battle_tag(new_tag.get()))
         except ValueError as exc:
             error.set(str(exc))
             entry.focus_set()
-            return "break"
-        finish(True)
-        return "break"
 
     shell = tk.Frame(dialog, bg="#09111a", highlightbackground="#416975", highlightthickness=1)
     shell.pack(fill="both", expand=True)
@@ -88,31 +94,38 @@ def _require_local_profile(config: ConfigStore) -> bool:
     content = tk.Frame(shell, bg="#09111a", padx=28, pady=23)
     content.pack(fill="both", expand=True)
     tk.Label(
-        content, text="Set up your profile", bg="#09111a", fg="#eaf3f8",
+        content, text="Choose your local profile", bg="#09111a", fg="#eaf3f8",
         font=("Segoe UI Semibold", 18),
     ).pack(anchor="w")
     tk.Label(
-        content, text="Enter your Battle.net tag to identify your replay profile.",
-        bg="#09111a", fg="#93a8b7", font=("Segoe UI", 9),
-    ).pack(anchor="w", pady=(6, 18))
+        content,
+        text="Choose a local identity for this session. Profiles keep separate settings, share the indexed replay library, and do not sign in to Battle.net.",
+        bg="#09111a", fg="#93a8b7", font=("Segoe UI", 9), wraplength=430, justify="left",
+    ).pack(anchor="w", pady=(6, 14))
     tk.Label(
-        content, text="BATTLE.NET TAG", bg="#09111a", fg="#91a2b3",
+        content, text="SAVED PROFILES", bg="#09111a", fg="#91a2b3",
         font=("Segoe UI Semibold", 8),
     ).pack(anchor="w", pady=(0, 6))
+    profile_picker = ttk.Combobox(
+        content, textvariable=selected, values=profiles,
+        state="readonly" if profiles else "disabled",
+    )
+    profile_picker.pack(fill="x", ipady=4)
+    tk.Label(
+        content, text="ADD OR OPEN ANOTHER PROFILE · BATTLE.NET TAG",
+        bg="#09111a", fg="#91a2b3", font=("Segoe UI Semibold", 8),
+    ).pack(anchor="w", pady=(14, 6))
     entry = tk.Entry(
-        content, textvariable=tag, bg="#0e1721", fg="#e9f0f6",
+        content, textvariable=new_tag, bg="#0e1721", fg="#e9f0f6",
         insertbackground="#66d9e8", selectbackground="#176f78",
         relief="flat", highlightthickness=1, highlightbackground="#2b3d4d",
         highlightcolor="#66d9e8", font=("Segoe UI", 10),
     )
-    entry.pack(fill="x", ipady=9)
-    entry.insert(0, "")
-    entry.focus_set()
-    tk.Label(
-        content, text="PlayerName#1234", bg="#09111a", fg="#718596",
-        font=("Segoe UI", 8),
-    ).pack(anchor="w", pady=(5, 0))
-    tk.Label(
+    entry.pack(fill="x", ipady=7)
+    tk.Label(content, text="PlayerName#1234", bg="#09111a", fg="#718596", font=("Segoe UI", 8)).pack(
+        anchor="w", pady=(5, 0),
+    )
+    error_label = tk.Label(
         content, textvariable=error, bg="#09111a", fg="#ed8a92",
         font=("Segoe UI", 9), anchor="w",
     )
@@ -120,40 +133,74 @@ def _require_local_profile(config: ConfigStore) -> bool:
     actions = tk.Frame(content, bg="#09111a")
     actions.pack(fill="x", pady=(14, 0))
     tk.Button(
-        actions, text="Continue", command=save_profile,
+        actions, text="Add / open profile", command=add_profile,
         bg="#176f78", fg="#f2ffff", activebackground="#208995",
         activeforeground="#ffffff", relief="flat", borderwidth=0,
         font=("Segoe UI Semibold", 9), padx=17, pady=9, cursor="hand2",
     ).pack(side="right")
+    if profiles:
+        tk.Button(
+            actions, text="Open selected", command=open_selected,
+            bg="#172633", fg="#dce8ee", activebackground="#263d4c",
+            activeforeground="#ffffff", relief="flat", borderwidth=0,
+            font=("Segoe UI Semibold", 9), padx=17, pady=9, cursor="hand2",
+        ).pack(side="right", padx=(0, 8))
     tk.Button(
-        actions, text="Exit", command=lambda: finish(False),
+        actions, text="Exit", command=lambda: finish(None),
         bg="#172633", fg="#dce8ee", activebackground="#263d4c",
         activeforeground="#ffffff", relief="flat", borderwidth=0,
         font=("Segoe UI Semibold", 9), padx=17, pady=9, cursor="hand2",
-    ).pack(side="right", padx=(0, 8))
-    dialog.bind("<Return>", save_profile)
-    dialog.bind("<Escape>", lambda _event: finish(False))
-    dialog.geometry("520x360")
+    ).pack(side="left")
+    dialog.bind("<Return>", lambda _event: add_profile())
+    dialog.bind("<Escape>", lambda _event: finish(None))
+    dialog.protocol("WM_DELETE_WINDOW", lambda: finish(None))
+    dialog.geometry("560x390")
     dialog.update_idletasks()
     x = (dialog.winfo_screenwidth() - dialog.winfo_reqwidth()) // 2
     y = (dialog.winfo_screenheight() - dialog.winfo_reqheight()) // 2
-    dialog.geometry(f"520x360+{x}+{y}")
+    dialog.geometry(f"560x390+{x}+{y}")
     dialog.grab_set()
+    if not profiles:
+        entry.focus_set()
     root.wait_window(dialog)
     root.destroy()
-    return result["saved"]
+    return result["tag"]
 
 
 def main() -> None:
-    data_dir = app_data_dir()
-    data_dir.mkdir(parents=True, exist_ok=True)
-    _configure_logging(data_dir)
-    logging.info("Marine Arena Companion startup")
-    config = ConfigStore(data_dir / "config.json")
-    if not _require_local_profile(config):
-        logging.info("Startup cancelled before local player profile was configured")
+    base_dir = app_data_dir()
+    base_dir.mkdir(parents=True, exist_ok=True)
+    battle_tag = _select_local_profile(base_dir)
+    if not battle_tag:
         return
-    semantics_path = data_dir / "data" / "marine_arena_semantics.json"
+    data_dir = local_profile_data_dir(base_dir, battle_tag)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    instance_lock = ProfileInstanceLock(base_dir, battle_tag)
+    if not instance_lock.acquired:
+        notice_root = tk.Tk()
+        notice_root.withdraw()
+        from tkinter import messagebox
+
+        messagebox.showinfo(
+            "Profile already open",
+            f"{battle_tag} already has Marine Arena Companion open. Choose a different profile to run another account.",
+            parent=notice_root,
+        )
+        notice_root.destroy()
+        return
+    try:
+        config = ConfigStore(data_dir / "config.json")
+        if config.get().battle_tag.casefold() != battle_tag.casefold():
+            config.update(battle_tag=battle_tag)
+        _configure_logging(data_dir)
+        logging.info("Marine Arena Companion startup for local profile %s", battle_tag)
+        _run_profile(data_dir, base_dir, config)
+    finally:
+        instance_lock.close()
+
+
+def _run_profile(data_dir: Path, shared_data_dir: Path, config: ConfigStore) -> None:
+    semantics_path = shared_data_dir / "data" / "marine_arena_semantics.json"
     if not semantics_path.exists():
         semantics_path.parent.mkdir(parents=True, exist_ok=True)
         filename = "marine_arena_semantics.json"
@@ -168,7 +215,7 @@ def main() -> None:
             shutil.copyfile(resource, semantics_path)
         else:
             logging.error("Semantic dictionary resource is missing; expected one of %s", candidates)
-    repository = Repository(data_dir / "marine_arena.db")
+    repository = Repository(shared_data_dir / "marine_arena.db")
     overlay = OverlaySession()
     semantics = SemanticDictionary(semantics_path)
     repository.save_semantic_mappings(semantics.entries())

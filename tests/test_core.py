@@ -13,8 +13,15 @@ from marine_arena_companion.analysis.identity import player_identity, split_play
 from marine_arena_companion.analysis.opponent import frequency_summary
 from marine_arena_companion.analysis.timing import aggregate_timings
 from marine_arena_companion.classification import MapClassification, classify_map
-from marine_arena_companion.config import AppConfig, ConfigStore, validate_replay_folder
+from marine_arena_companion.config import (
+    AppConfig,
+    ConfigStore,
+    local_profile_data_dir,
+    local_profile_tags,
+    validate_replay_folder,
+)
 from marine_arena_companion.db.repository import Repository, SCHEMA_VERSION
+from marine_arena_companion.instance import ProfileInstanceLock
 from marine_arena_companion.replay.hashing import sha256_file
 from marine_arena_companion.replay.readiness import ReplayNotReadyError, wait_until_ready
 from marine_arena_companion.replay.semantics import SemanticDictionary
@@ -48,6 +55,28 @@ def test_config_persists_and_validates(tmp_path: Path) -> None:
         validate_replay_folder(tmp_path / "missing")
     with pytest.raises(ValueError):
         store.update(battle_tag="missing-discriminator")
+
+
+def test_local_profiles_keep_existing_data_and_separate_accounts(tmp_path: Path) -> None:
+    config_path = tmp_path / "config.json"
+    ConfigStore(config_path).update(battle_tag="MainPlayer#1234")
+
+    assert local_profile_data_dir(tmp_path, "mainplayer#1234") == tmp_path
+    alternate = local_profile_data_dir(tmp_path, "AltPlayer#5678")
+    assert alternate != tmp_path
+    assert alternate.name != tmp_path.name
+    ConfigStore(alternate / "config.json").update(battle_tag="AltPlayer#5678")
+    assert local_profile_tags(tmp_path) == ["AltPlayer#5678", "MainPlayer#1234"]
+
+
+def test_profile_instance_lock_can_be_reacquired_after_close(tmp_path: Path) -> None:
+    lock = ProfileInstanceLock(tmp_path, "PlayerName#1234")
+    assert lock.acquired
+    lock.close()
+
+    second_lock = ProfileInstanceLock(tmp_path, "PlayerName#1234")
+    assert second_lock.acquired
+    second_lock.close()
 
 
 def test_battle_tag_matches_recorded_name_history(tmp_path: Path) -> None:
