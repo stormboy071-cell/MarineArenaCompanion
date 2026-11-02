@@ -686,6 +686,8 @@ class Repository:
         reports = {
             int(player["player_id"]): {
                 "player_id": int(player["player_id"]),
+                "display_name": split_player_name(player["display_name"])[1],
+                "slot": player["slot"],
                 "performance": {
                     "actions_per_minute": None,
                     "recorded_actions": 0,

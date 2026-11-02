@@ -463,6 +463,8 @@ def test_replay_summary_returns_player_performance_score_units_build_order_and_g
         assert replay["players"][0]["slot"] == 1
         assert replay["players"][0]["team"] == 1
         report = next(item for item in replay["player_reports"] if item["player_id"] == player_id)
+        assert report["display_name"] == "Player"
+        assert report["slot"] == 1
         assert report["performance"] == {
             "actions_per_minute": 1.0,
             "recorded_actions": 2,
