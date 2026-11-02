@@ -1104,49 +1104,89 @@ class NativeWorkspace:
                 bg=PANEL, fg=MUTED, font=("Segoe UI", 8),
             ).pack(anchor="w", pady=(0, 7))
         for report in reports:
-            frame = tk.Frame(target, bg=PANEL)
-            frame.pack(fill="x", anchor="n", pady=(0, 10))
+            frame = self._panel(target, padx=10, pady=9)
+            frame.pack(fill="x", anchor="n", pady=(0, 9))
+            content = tk.Frame(frame, bg=PANEL)
+            content.pack(fill="x")
             tk.Label(
-                frame, text=_display_name(report.get("display_name", f"Player {report.get('player_id')}")),
+                content, text=_display_name(report.get("display_name", f"Player {report.get('player_id')}")),
                 bg=PANEL, fg=CYAN, font=("Segoe UI Semibold", 10),
-            ).pack(anchor="w", pady=(0, 4))
+            ).pack(anchor="w", pady=(0, 7))
             data = report.get(section, {})
             if section == "performance":
                 entries = (
-                    ("Approximate recorded actions per minute", data.get("actions_per_minute")),
-                    ("Recorded actions", data.get("recorded_actions")),
-                    ("Average unspent resources", data.get("average_unspent_resources")),
-                    ("Time supply capped (seconds)", data.get("time_supply_capped_seconds")),
-                    ("Workers created", data.get("workers_created")),
+                    ("Recorded actions per minute", data.get("actions_per_minute"), "Approximate replay action rate"),
+                    ("Recorded actions", data.get("recorded_actions"), "Actions attributed to this player"),
+                    ("Average unspent resources", data.get("average_unspent_resources"), "Minerals + gas across replay samples"),
+                    ("Time at supply cap", data.get("time_supply_capped_seconds"), "Elapsed match time"),
+                    ("Workers created", data.get("workers_created"), "Workers identified in replay events"),
                 )
             elif section == "score_summary":
                 entries = (
-                    ("Resources on hand", data.get("resources_on_hand")),
-                    ("Army investment", data.get("army_investment")),
-                    ("Economy investment", data.get("economy_investment")),
-                    ("Technology investment", data.get("technology_investment")),
+                    ("Resources on hand", data.get("resources_on_hand"), "Minerals + gas at final sample"),
+                    ("Army investment", data.get("army_investment"), "Recorded mineral + gas investment"),
+                    ("Economy investment", data.get("economy_investment"), "Recorded mineral + gas investment"),
+                    ("Technology investment", data.get("technology_investment"), "Recorded mineral + gas investment"),
                 )
             else:
                 entries = (
-                    ("Units trained", data.get("trained")),
-                    ("Units lost", data.get("units_lost")),
-                    ("Units killed", data.get("units_killed")),
-                    ("Structures built", data.get("structures_built")),
-                    ("Structures razed", data.get("structures_razed")),
+                    ("Units trained", data.get("trained"), "Recorded player-owned unit events"),
+                    ("Units lost", data.get("units_lost"), "Losses attributed to this player"),
+                    ("Units killed", data.get("units_killed"), "Kills attributed to this player"),
+                    ("Structures built", data.get("structures_built"), "Recognized structure events"),
+                    ("Structures razed", data.get("structures_razed"), "Recognized structure losses"),
                 )
                 top_units = data.get("top_units", [])
                 top_upgrades = data.get("top_upgrades", [])
-            for label, value in entries:
-                self._key_value(frame, label, _recorded(value))
+            grid = tk.Frame(content, bg=PANEL)
+            grid.pack(fill="x")
+            for index, (label, value, note) in enumerate(entries):
+                card = tk.Frame(
+                    grid, bg=PANEL_SOFT, highlightbackground=LINE,
+                    highlightthickness=1, padx=9, pady=7,
+                )
+                card.grid(
+                    row=index // 2, column=index % 2, sticky="nsew",
+                    padx=(0, 5 if index % 2 == 0 else 0),
+                    pady=(0, 5),
+                )
+                grid.grid_columnconfigure(index % 2, weight=1)
+                rendered = (
+                    _duration(value)
+                    if section == "performance" and label == "Time at supply cap" and value is not None
+                    else _recorded(value)
+                )
+                tk.Label(
+                    card, text=label.upper(), bg=PANEL_SOFT, fg="#9bc5e4",
+                    font=("Segoe UI Semibold", 7), anchor="w",
+                ).pack(fill="x")
+                tk.Label(
+                    card, text=rendered, bg=PANEL_SOFT, fg=CYAN,
+                    font=("Segoe UI Semibold", 14), anchor="w",
+                ).pack(fill="x", pady=(3, 1))
+                tk.Label(
+                    card, text=note, bg=PANEL_SOFT, fg=MUTED,
+                    font=("Segoe UI", 7), anchor="w", wraplength=310,
+                ).pack(fill="x")
             if section == "units":
-                self._key_value(
-                    frame, "Most trained",
-                    ", ".join(f"{item['name']} ({item['count']})" for item in top_units) or "No unit events recorded",
-                )
-                self._key_value(
-                    frame, "Upgrades recorded",
-                    ", ".join(f"{item['name']} ({item['count']})" for item in top_upgrades) or "No upgrade events recorded",
-                )
+                for label, items, empty in (
+                    ("Most trained units", top_units, "No unit events recorded"),
+                    ("Recorded upgrades", top_upgrades, "No upgrade events recorded"),
+                ):
+                    detail = tk.Frame(
+                        content, bg=PANEL_SOFT, highlightbackground=LINE,
+                        highlightthickness=1, padx=9, pady=7,
+                    )
+                    detail.pack(fill="x", pady=(0, 5))
+                    tk.Label(
+                        detail, text=label.upper(), bg=PANEL_SOFT, fg="#9bc5e4",
+                        font=("Segoe UI Semibold", 7), anchor="w",
+                    ).pack(fill="x")
+                    text = ", ".join(f"{item['name']} ({item['count']})" for item in items) or empty
+                    tk.Label(
+                        detail, text=text, bg=PANEL_SOFT, fg=TEXT,
+                        font=("Segoe UI", 8), anchor="w", justify="left", wraplength=700,
+                    ).pack(fill="x", pady=(4, 0))
 
     def _render_build_order(self, target: tk.Widget, reports: list[dict[str, Any]]) -> None:
         self._clear(target)
