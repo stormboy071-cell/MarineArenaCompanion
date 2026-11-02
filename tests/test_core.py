@@ -22,6 +22,7 @@ from marine_arena_companion.config import (
 )
 from marine_arena_companion.db.repository import Repository, SCHEMA_VERSION
 from marine_arena_companion.instance import ProfileInstanceLock
+from marine_arena_companion.main import _select_local_profile
 from marine_arena_companion.replay.hashing import sha256_file
 from marine_arena_companion.replay.readiness import ReplayNotReadyError, wait_until_ready
 from marine_arena_companion.replay.semantics import SemanticDictionary
@@ -67,6 +68,12 @@ def test_local_profiles_keep_existing_data_and_separate_accounts(tmp_path: Path)
     assert alternate.name != tmp_path.name
     ConfigStore(alternate / "config.json").update(battle_tag="AltPlayer#5678")
     assert local_profile_tags(tmp_path) == ["AltPlayer#5678", "MainPlayer#1234"]
+
+
+def test_single_saved_profile_opens_without_asking_for_another_tag(tmp_path: Path) -> None:
+    ConfigStore(tmp_path / "config.json").update(battle_tag="MainPlayer#1234")
+
+    assert _select_local_profile(tmp_path) == "MainPlayer#1234"
 
 
 def test_profile_instance_lock_can_be_reacquired_after_close(tmp_path: Path) -> None:

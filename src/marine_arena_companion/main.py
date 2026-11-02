@@ -38,8 +38,10 @@ def _configure_logging(data_dir: Path) -> None:
         root.addHandler(logging.StreamHandler())
 
 
-def _select_local_profile(base_dir: Path) -> str | None:
-    profiles = local_profile_tags(base_dir)
+def _select_local_profile(base_dir: Path, profiles: list[str] | None = None) -> str | None:
+    profiles = local_profile_tags(base_dir) if profiles is None else profiles
+    if len(profiles) == 1:
+        return profiles[0]
     root = tk.Tk()
     root.title("Choose a profile · Marine Arena Companion")
     root.configure(bg="#09111a")
@@ -128,26 +130,33 @@ def _select_local_profile(base_dir: Path) -> str | None:
     error_label.pack(fill="x", pady=(7, 0))
     actions = tk.Frame(content, bg="#09111a")
     actions.pack(fill="x", pady=(14, 0))
-    tk.Button(
-        actions, text="Add / open profile", command=add_profile,
-        bg="#176f78", fg="#f2ffff", activebackground="#208995",
-        activeforeground="#ffffff", relief="flat", borderwidth=0,
-        font=("Segoe UI Semibold", 9), padx=17, pady=9, cursor="hand2",
-    ).pack(side="right")
     if profiles:
         tk.Button(
-            actions, text="Open selected", command=open_selected,
+            actions, text="Open selected profile", command=open_selected,
+            bg="#176f78", fg="#f2ffff", activebackground="#208995",
+            activeforeground="#ffffff", relief="flat", borderwidth=0,
+            font=("Segoe UI Semibold", 9), padx=17, pady=9, cursor="hand2",
+        ).pack(side="right")
+        tk.Button(
+            actions, text="Add another profile", command=add_profile,
             bg="#172633", fg="#dce8ee", activebackground="#263d4c",
             activeforeground="#ffffff", relief="flat", borderwidth=0,
             font=("Segoe UI Semibold", 9), padx=17, pady=9, cursor="hand2",
         ).pack(side="right", padx=(0, 8))
+    else:
+        tk.Button(
+            actions, text="Open profile", command=add_profile,
+            bg="#176f78", fg="#f2ffff", activebackground="#208995",
+            activeforeground="#ffffff", relief="flat", borderwidth=0,
+            font=("Segoe UI Semibold", 9), padx=17, pady=9, cursor="hand2",
+        ).pack(side="right")
     tk.Button(
         actions, text="Exit", command=lambda: finish(None),
         bg="#172633", fg="#dce8ee", activebackground="#263d4c",
         activeforeground="#ffffff", relief="flat", borderwidth=0,
         font=("Segoe UI Semibold", 9), padx=17, pady=9, cursor="hand2",
     ).pack(side="left")
-    root.bind("<Return>", lambda _event: add_profile())
+    root.bind("<Return>", lambda _event: open_selected() if profiles else add_profile())
     root.bind("<Escape>", lambda _event: finish(None))
     root.protocol("WM_DELETE_WINDOW", lambda: finish(None))
     root.geometry("560x390")
@@ -158,7 +167,9 @@ def _select_local_profile(base_dir: Path) -> str | None:
     root.deiconify()
     root.lift()
     root.focus_force()
-    if not profiles:
+    if profiles:
+        profile_picker.focus_set()
+    else:
         entry.focus_set()
     root.mainloop()
     return result["tag"]
