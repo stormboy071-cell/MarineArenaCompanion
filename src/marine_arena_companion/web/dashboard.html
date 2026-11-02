@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b111a">
+  <title>Marine Arena Companion</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Marine Arena Companion home" data-view="overview">
+        <span class="mark">MA</span>
+        <span><strong>MARINE ARENA</strong><small>REPLAY COMPANION</small></span>
+      </a>
+      <nav class="menu" aria-label="Replay data">
+        <p class="menu-label">YOUR LIBRARY</p>
+        <button class="menu-item active" type="button" data-view="overview" aria-current="page"><span class="menu-icon">⌂</span>Overview</button>
+        <button class="menu-item" type="button" data-view="replays"><span class="menu-icon">▤</span>Replay library<span class="menu-count" id="menuReplayCount">—</span></button>
+        <button class="menu-item" type="button" data-view="players"><span class="menu-icon">♙</span>Players<span class="menu-count" id="menuPlayerCount">—</span></button>
+        <button class="menu-item" type="button" data-view="reminders"><span class="menu-icon">◷</span>Overlay reminders<span class="menu-count" id="menuReminderCount">—</span></button>
+        <p class="menu-label menu-label-secondary">APP HEALTH</p>
+        <button class="menu-item" type="button" data-view="diagnostics"><span class="menu-icon">⌁</span>Library health</button>
+      </nav>
+      <div class="sidebar-note">
+        <span class="privacy-mark">●</span>
+        <div><strong>Private by design</strong><small>Replay analysis stays on this device. Original files are read-only.</small></div>
+      </div>
+    </aside>
+
+    <div class="workspace">
+      <header class="content-topbar">
+        <div class="breadcrumb"><span>MARINE ARENA COMPANION</span><strong id="viewHeading">Overview</strong></div>
+        <div class="topbar-actions"><button type="button" class="profile-button" id="profileSettings" data-action="edit-profile">Set up profile</button><span id="watcher" class="pill">CONNECTING</span><span class="updated-label" id="statusUpdated">Checking status…</span></div>
+      </header>
+
+      <main>
+        <section class="page active" id="page-overview" data-page="overview">
+          <div class="page-heading">
+            <div><p class="eyebrow">YOUR REPLAY DESK</p><h1>A clearer view of your games.</h1><p class="intro">Browse replay facts and player history from your completed games. Nothing reads live game data.</p></div>
+            <div class="actions"><button type="button" class="primary-button" data-action="scan">Scan library</button><button type="button" class="secondary-button" data-action="retry">Retry failed</button></div>
+          </div>
+
+          <section class="stats-grid" aria-label="Library summary">
+            <article class="stat-card"><span class="stat-icon">▤</span><span class="label">REPLAYS IN LIBRARY</span><b id="total">—</b><small id="analyzed">— analyzed</small></article>
+            <article class="stat-card"><span class="stat-icon">⚓</span><span class="label">MARINE ARENA MAPS</span><b id="marine">—</b><small>Identified from replay metadata</small></article>
+            <article class="stat-card"><span class="stat-icon">♙</span><span class="label">PLAYERS FOUND</span><b id="playerTotal">—</b><small>Participants found in replays</small></article>
+            <article class="stat-card"><span class="stat-icon warning-icon">!</span><span class="label">NEEDING ATTENTION</span><b id="failed">—</b><small>Replay files that could not be analyzed</small></article>
+          </section>
+
+          <section class="overview-grid">
+            <article class="panel scan-panel">
+              <div class="panel-heading"><div><p class="eyebrow">LIBRARY SCAN</p><h2 id="scanTitle">Your replay folder</h2></div><span id="scanState" class="status-chip">IDLE</span></div>
+              <p class="panel-copy" id="folder">Replay folder not configured</p>
+              <div class="progress-track" role="progressbar" aria-label="Replay scan progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="progress"></i></div>
+              <div class="scan-summary"><span id="scanText">No scan running</span><span id="scanPercent">—</span></div>
+              <div class="scan-footnote">The scan runs in the background. You can keep using your computer while it works.</div>
+            </article>
+            <article class="panel latest-panel">
+              <div class="panel-heading"><div><p class="eyebrow">MOST RECENT</p><h2>Latest replay</h2></div><button type="button" class="text-button" data-view="replays">Browse library <span aria-hidden="true">→</span></button></div>
+              <div id="latest" class="empty-state">No replay has been indexed yet.</div>
+            </article>
+          </section>
+
+          <section class="panel recent-panel">
+            <div class="panel-heading"><div><p class="eyebrow">QUICK LOOK</p><h2>Replay history</h2></div><button type="button" class="text-button" data-view="replays">See all replays <span aria-hidden="true">→</span></button></div>
+            <div class="quick-filters" role="group" aria-label="Filter recent replay history">
+              <button type="button" class="filter-chip active" data-recent-filter="">All</button>
+              <button type="button" class="filter-chip" data-recent-filter="MARINE_ARENA">Marine Arena</button>
+              <button type="button" class="filter-chip" data-recent-filter="ISSUES">Needs attention</button>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>REPLAY</th><th>MAP</th><th>STATUS</th><th>ADDED</th></tr></thead><tbody id="recentReplays"><tr><td colspan="4" class="empty-cell">Your recent replays will appear here.</td></tr></tbody></table></div>
+          </section>
+          <p class="honesty-note"><strong>Built for clarity:</strong> the app keeps replay details and protocol records in the background. The dashboard shows only readable summaries; coaching advice is not available yet.</p>
+        </section>
+
+        <section class="page" id="page-replays" data-page="replays" hidden>
+          <div class="page-heading compact-heading">
+            <div><p class="eyebrow">YOUR LIBRARY</p><h1>Replay library</h1><p class="intro">Find a game, open its recorded details, or check why decoding needs attention.</p></div>
+            <div class="actions"><button type="button" class="primary-button" data-action="scan">Scan library</button><button type="button" class="secondary-button" data-action="refresh">Refresh</button></div>
+          </div>
+          <section class="panel library-panel">
+            <div class="filter-bar">
+              <label class="search-box"><span aria-hidden="true">⌕</span><input id="replaySearch" type="search" maxlength="200" placeholder="Search replay name or map…" autocomplete="off"></label>
+              <label class="select-filter"><span class="sr-only">Filter by replay status</span><select id="replayStatus"><option value="">All statuses</option><option value="ANALYZED">Ready to explore</option><option value="PROCESSING">Processing</option><option value="NEEDS_ATTENTION">Needs attention</option><option value="UNSUPPORTED_PROTOCOL">Format not supported</option></select></label>
+              <label class="select-filter"><span class="sr-only">Filter by map type</span><select id="replayMap"><option value="">All map types</option><option value="MARINE_ARENA_EU">Marine Arena EU</option><option value="MARINE_ARENA_OTHER">Other Marine Arena</option><option value="OTHER_MAP">Other maps</option><option value="UNKNOWN">Unknown map</option></select></label>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>REPLAY</th><th>MAP</th><th>STATUS</th><th>ADDED</th><th></th></tr></thead><tbody id="replayRows"><tr><td colspan="5" class="empty-cell">Loading replay library…</td></tr></tbody></table></div>
+            <div class="list-footer"><span id="replayResultCount">—</span><div class="pager"><button type="button" class="pager-button" id="replayPrevious" disabled>← Previous</button><span id="replayPageLabel">Page 1</span><button type="button" class="pager-button" id="replayNext" disabled>Next →</button></div></div>
+          </section>
+          <section class="panel detail-panel" id="replayDetail" hidden aria-live="polite"></section>
+        </section>
+
+        <section class="page" id="page-players" data-page="players" hidden>
+          <div class="page-heading compact-heading">
+            <div><p class="eyebrow">PLAYER INSIGHTS</p><h1>Players in your replays</h1><p class="intro">View your replay-backed profile or explore the other players you have met.</p></div>
+            <button type="button" class="secondary-button" data-action="refresh">Refresh</button>
+          </div>
+          <div class="player-section-tabs" role="tablist" aria-label="Player categories">
+            <button type="button" class="player-section-tab active" role="tab" aria-selected="true" data-player-section="mine">My profile</button>
+            <button type="button" class="player-section-tab" role="tab" aria-selected="false" data-player-section="opponents">Opponents</button>
+          </div>
+          <section class="panel my-profile-panel" id="myProfilePanel" aria-live="polite">
+            <div class="empty-state">Loading your replay-backed profile…</div>
+          </section>
+          <div class="opponents-section" id="opponentsSection" hidden>
+            <p class="context-note"><span class="info-mark">i</span>Other replay participants are listed here. The configured Battle.net tag is compared with the player name recorded in each replay; the numeric tag suffix may not be present in replay data.</p>
+            <div class="players-layout">
+              <section class="panel players-panel">
+                <div class="player-filters">
+                  <label class="search-box player-search"><span aria-hidden="true">⌕</span><input id="playerSearch" type="search" maxlength="200" placeholder="Search player names…" autocomplete="off"></label>
+                  <label class="select-filter"><span class="sr-only">Sort players</span><select id="playerSort"><option value="recent">Most recently seen</option><option value="games">Most games</option><option value="name">Name A–Z</option></select></label>
+                </div>
+                <div class="player-list" id="playerRows"><div class="empty-state">Other player profiles will appear here after replays are analyzed.</div></div>
+                <div class="list-footer"><span id="playerResultCount">—</span><div class="pager"><button type="button" class="pager-button" id="playerPrevious" disabled>←</button><span id="playerPageLabel">Page 1</span><button type="button" class="pager-button" id="playerNext" disabled>→</button></div></div>
+              </section>
+              <section class="panel detail-panel player-detail" id="playerDetail"><div class="empty-state">Select a player to view their replay history.</div></section>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="page-reminders" data-page="reminders" hidden>
+          <div class="page-heading compact-heading">
+            <div><p class="eyebrow">CUSTOM GAME CUES</p><h1>Your overlay reminders</h1><p class="intro">Create your own timed unit, hero, elite, or custom callouts. Your cues stay on this PC.</p></div>
+            <button type="button" class="primary-button" data-action="open-overlay-preview">Open overlay preview</button>
+          </div>
+          <p class="context-note"><span class="info-mark">i</span>Reminder times are elapsed match time, not clock time. Start the overlay timer when your game begins; cues such as 00:40:00 or 01:24:03 appear at those match times.</p>
+          <div class="reminders-layout">
+            <section class="panel reminder-editor-panel">
+              <div class="panel-heading"><div><p class="eyebrow" id="reminderFormEyebrow">NEW OVERLAY CUE</p><h2 id="reminderFormHeading">Create a reminder</h2></div></div>
+              <form id="reminderForm">
+                <input id="reminderId" type="hidden">
+                <label class="form-field">Reminder text<input id="reminderTitle" type="text" maxlength="100" required placeholder="e.g. Save resources for the next wave"></label>
+                <div class="form-row">
+                  <label class="form-field">Elapsed match time (HH:MM:SS)<input id="reminderTime" type="text" inputmode="numeric" maxlength="11" pattern="[0-9]+:[0-5][0-9]:[0-5][0-9]" value="00:30:00" aria-describedby="reminderTimeHint" required><span class="field-optional" id="reminderTimeHint">Examples: 00:40:00 or 01:24:03</span></label>
+                  <label class="form-field">Cue type<select id="reminderCategory"><option value="unit_combo">Unit combination</option><option value="hero">Hero</option><option value="elite">Elite</option><option value="custom">Custom</option></select></label>
+                </div>
+                <label class="form-field" id="reminderItemField">Unit / character name<input id="reminderItem" type="text" maxlength="100" placeholder="e.g. 2 Marines + 1 Medic"></label>
+                <label class="form-field">Extra details <span class="field-optional">optional</span><textarea id="reminderNote" maxlength="500" rows="3" placeholder="A short personal note or follow-up"></textarea></label>
+                <label class="check-field"><input id="reminderEnabled" type="checkbox" checked><span>Include this cue in the game overlay</span></label>
+                <div class="form-actions"><button type="submit" class="primary-button" id="reminderSubmit">Save reminder</button><button type="button" class="secondary-button" id="reminderCancel" hidden>Cancel edit</button></div>
+                <p id="reminderFormMessage" class="form-message" aria-live="polite"></p>
+              </form>
+            </section>
+            <section class="panel reminder-list-panel">
+              <div class="panel-heading"><div><p class="eyebrow">YOUR CUE LIST</p><h2>Timed reminders</h2></div><span class="status-chip" id="reminderCount">0 CUES</span></div>
+              <div class="filter-bar">
+                <label class="search-box"><span aria-hidden="true">⌕</span><input id="reminderSearch" type="search" maxlength="200" placeholder="Search text or unit…" autocomplete="off"></label>
+                <label class="select-filter"><span class="sr-only">Filter reminders by cue type</span><select id="reminderFilter"><option value="">All cue types</option><option value="unit_combo">Unit combinations</option><option value="hero">Heroes</option><option value="elite">Elites</option><option value="custom">Custom</option></select></label>
+                <label class="select-filter"><span class="sr-only">Filter reminders by enabled state</span><select id="reminderEnabledFilter"><option value="">All reminders</option><option value="enabled">Enabled</option><option value="disabled">Disabled</option></select></label>
+              </div>
+              <div class="reminder-list" id="reminderRows"><div class="empty-state">Loading your reminders…</div></div>
+              <p class="note">The floating overlay has its own start, pause, and reset controls. Start it when the match begins.</p>
+            </section>
+          </div>
+        </section>
+
+        <section class="page" id="page-diagnostics" data-page="diagnostics" hidden>
+          <div class="page-heading compact-heading">
+            <div><p class="eyebrow">APP HEALTH</p><h1>Library health</h1><p class="intro">A plain-language view of your saved replays and any files that may need another scan.</p></div>
+            <button type="button" class="secondary-button" data-action="refresh-diagnostics">Refresh</button>
+          </div>
+          <div class="diagnostic-stats">
+            <article class="mini-stat"><span>Replays saved</span><b id="healthTotal">—</b></article>
+            <article class="mini-stat"><span>Ready to explore</span><b id="healthAnalyzed">—</b></article>
+            <article class="mini-stat"><span>Need attention</span><b id="healthFailed">—</b></article>
+          </div>
+          <section class="panel diagnostics-panel">
+            <div class="panel-heading"><div><p class="eyebrow">REPLAY PROCESSING</p><h2>What needs attention?</h2></div><button type="button" class="text-button" data-view="replays" data-status-filter="NEEDS_ATTENTION">Review replays →</button></div>
+            <p class="panel-copy">Technical replay records stay on this device and are not shown here.</p>
+            <div id="healthIssues" class="health-issues"></div>
+          </section>
+        </section>
+
+        <footer class="footer"><span>Marine Arena Companion</span><span id="footerVersion"></span></footer>
+      </main>
+    </div>
+  </div>
+  <dialog class="profile-dialog" id="profileDialog" aria-labelledby="profileDialogTitle">
+    <form id="profileForm" class="profile-dialog-card">
+      <p class="eyebrow">LOCAL PLAYER IDENTITY</p>
+      <h2 id="profileDialogTitle">Set up your profile</h2>
+      <p class="intro">Enter your Battle.net tag so replay participants with your recorded player name can be grouped under <strong>My profile</strong>.</p>
+      <label class="form-field">Battle.net tag<input id="battleTagInput" name="battle_tag" type="text" maxlength="41" required autocomplete="nickname" placeholder="PlayerName#1234" pattern=".{2,32}#[0-9]{3,8}"></label>
+      <p class="note profile-dialog-note">This is a local profile, not a Battle.net login. Your tag stays in this app’s local settings; replay files may omit the numeric # suffix, so matches are based on the recorded name.</p>
+      <p id="profileFormMessage" class="form-message" aria-live="polite"></p>
+      <div class="form-actions"><button type="submit" class="primary-button">Save profile</button><button type="button" class="secondary-button" id="profileCancel" hidden>Cancel</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="/assets/app.js" defer></script>
+</body>
+</html>

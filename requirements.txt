@@ -1,0 +1,4 @@
+watchdog>=4.0
+s2protocol>=1.0.0
+mpyq>=0.2.5
+

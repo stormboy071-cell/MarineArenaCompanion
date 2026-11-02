@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b131d">
+  <title>Marine Arena Game Reminders</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body class="overlay-body">
+  <main class="overlay-shell">
+    <header class="overlay-titlebar">
+      <span class="mark">MA</span>
+      <div><strong>GAME REMINDERS</strong><small>PERSONAL CUES · MATCH TIMER</small></div>
+      <a class="overlay-manage" href="/#reminders" title="Manage reminders">Manage</a>
+    </header>
+    <section class="overlay-clock">
+      <div><small>MATCH ELAPSED</small><strong id="overlayClock">00:00:00</strong></div>
+      <span id="overlayMode" class="overlay-mode">READY</span>
+    </section>
+    <div class="overlay-controls">
+      <button type="button" class="overlay-control primary" id="overlayStart">Start timer</button>
+      <button type="button" class="overlay-control" id="overlayPause">Pause</button>
+      <button type="button" class="overlay-control" id="overlayReset">Reset</button>
+    </div>
+    <section class="overlay-cues">
+      <div class="overlay-section-title"><span>YOUR TIMED CUES</span><span id="overlayCueCount"></span></div>
+      <div id="overlayCueList" class="overlay-cue-list"><div class="overlay-empty">Loading reminders…</div></div>
+    </section>
+    <footer class="overlay-footer"><span id="overlayStatus">Local overlay · no live game access</span><button type="button" id="overlayOpacity" class="overlay-control small">Opacity 92%</button></footer>
+  </main>
+  <script>
+    const categoryNames = { unit_combo: "UNIT COMBO", hero: "HERO", elite: "ELITE", custom: "CUSTOM" };
+    let session = { running: false, elapsed_seconds: 0, dismissed_reminder_ids: [] };
+    let reminders = [];
+    let sampledAt = performance.now();
+    let opacity = 0.92;
+    let busy = false;
+    let refreshTimer;
+
+    function safe(value) {
+      return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[character]));
+    }
+
+    function elapsedNow() {
+      return session.elapsed_seconds + (session.running ? Math.floor((performance.now() - sampledAt) / 1000) : 0);
+    }
+
+    function timeLabel(seconds) {
+      const value = Math.max(0, Math.floor(seconds));
+      const hours = Math.floor(value / 3600);
+      const minutes = Math.floor((value % 3600) / 60);
+      const remainder = value % 60;
+      return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+    }
+
+    async function request(path, method = "GET") {
+      const response = await fetch(path, { method, headers: method === "GET" ? {} : { "Content-Type": "application/json" } });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || `Request failed (${response.status})`);
+      return body;
+    }
+
+    function render() {
+      const elapsed = elapsedNow();
+      document.querySelector("#overlayClock").textContent = timeLabel(elapsed);
+      document.querySelector("#overlayMode").textContent = session.running ? "TIMER RUNNING" : elapsed ? "PAUSED" : "READY";
+      document.querySelector("#overlayMode").classList.toggle("running", session.running);
+      document.querySelector("#overlayCueCount").textContent = `${reminders.length} ${reminders.length === 1 ? "CUE" : "CUES"}`;
+      const dismissed = new Set(session.dismissed_reminder_ids);
+      const active = reminders.filter(reminder => !dismissed.has(reminder.id));
+      const list = document.querySelector("#overlayCueList");
+      list.innerHTML = active.length ? active.map(reminder => {
+        const remaining = reminder.at_seconds - elapsed;
+        const due = remaining <= 0;
+        const category = categoryNames[reminder.category] || "CUSTOM";
+        const timing = due ? "READY NOW" : `IN ${timeLabel(remaining)}`;
+        return `<article class="overlay-cue ${due ? "due" : ""}">
+          <div class="overlay-cue-top"><span class="overlay-time">${timeLabel(reminder.at_seconds)}</span><span class="overlay-category">${safe(category)}</span><span class="overlay-countdown">${timing}</span></div>
+          ${reminder.item_label ? `<strong class="overlay-item">${safe(reminder.item_label)}</strong>` : ""}
+          <strong class="overlay-reminder-text">${safe(reminder.title)}</strong>
+          ${reminder.note ? `<p>${safe(reminder.note)}</p>` : ""}
+          ${due ? `<button type="button" class="overlay-done" data-dismiss="${Number(reminder.id)}">Got it</button>` : ""}
+        </article>`;
+      }).join("") : '<div class="overlay-empty">No active reminders.<br>Choose <strong>Manage</strong> to add a timed cue.</div>';
+    }
+
+    async function refresh() {
+      if (busy || document.visibilityState === "hidden") return;
+      busy = true;
+      try {
+        const data = await request("/api/overlay/state");
+        session = data.session;
+        reminders = data.reminders;
+        sampledAt = performance.now();
+        document.querySelector("#overlayStatus").textContent = session.running
+          ? "Timer running · overlay stays on this device"
+          : "Local overlay · start when your match begins";
+        render();
+      } catch (error) {
+        document.querySelector("#overlayStatus").textContent = error.message;
+      } finally {
+        busy = false;
+      }
+    }
+
+    async function control(action) {
+      try {
+        const data = await request(`/api/overlay/${action}`, "POST");
+        session = data.session;
+        sampledAt = performance.now();
+        render();
+      } catch (error) {
+        document.querySelector("#overlayStatus").textContent = error.message;
+      }
+    }
+
+    document.querySelector("#overlayStart").addEventListener("click", () => control("start"));
+    document.querySelector("#overlayPause").addEventListener("click", () => control("pause"));
+    document.querySelector("#overlayReset").addEventListener("click", () => control("reset"));
+    document.querySelector("#overlayOpacity").addEventListener("click", event => {
+      opacity = opacity <= 0.76 ? 1 : Math.round((opacity - 0.08) * 100) / 100;
+      document.querySelector(".overlay-shell").style.backgroundColor = `rgba(11, 19, 29, ${opacity})`;
+      event.target.textContent = `Opacity ${Math.round(opacity * 100)}%`;
+    });
+    document.querySelector("#overlayCueList").addEventListener("click", async event => {
+      const button = event.target.closest("[data-dismiss]");
+      if (!button) return;
+      try {
+        const data = await request(`/api/overlay/reminders/${Number(button.dataset.dismiss)}/dismiss`, "POST");
+        session = data.session;
+        render();
+      } catch (error) {
+        document.querySelector("#overlayStatus").textContent = error.message;
+      }
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") refresh();
+    });
+    refresh();
+    setInterval(() => {
+      if (document.visibilityState === "visible") render();
+    }, 1000);
+    refreshTimer = setInterval(() => {
+      if (document.visibilityState === "visible") refresh();
+    }, 5000);
+  </script>
+</body>
+</html>

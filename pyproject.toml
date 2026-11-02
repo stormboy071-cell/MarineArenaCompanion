@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "marine-arena-companion"
+version = "0.1.0"
+description = "Local StarCraft II Marine Arena replay companion"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "watchdog>=4.0",
+    "s2protocol>=1.0.0",
+    "mpyq>=0.2.5",
+]
+
+[project.optional-dependencies]
+tray = ["pystray>=0.19", "Pillow>=10"]
+build = ["pyinstaller>=6"]
+test = ["pytest>=8"]
+
+[project.scripts]
+marine-arena-companion = "marine_arena_companion.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+marine_arena_companion = ["web/*", "data/*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
