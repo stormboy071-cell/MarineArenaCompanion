@@ -102,6 +102,16 @@ def _recorded(value: object, suffix: str = "") -> str:
     return f"{number:,.1f}{suffix}"
 
 
+def _report_player_label(report: dict[str, Any], *, include_slot: bool = False) -> str:
+    slot = report.get("slot")
+    name = _display_name(report.get("display_name")) if report.get("display_name") else ""
+    if not name or name == "Unknown":
+        name = f"Player in slot {_recorded(slot)}" if slot is not None else "Unknown player"
+    if include_slot and slot is not None:
+        return f"{name} · S{_recorded(slot)}"
+    return name
+
+
 class NativeWorkspace:
     """Native Tk workspace for the app's primary screens."""
 
@@ -475,6 +485,50 @@ class NativeWorkspace:
             tree.column(key, width=width, minwidth=60, anchor="w", stretch=True)
         return tree
 
+    @staticmethod
+    def _scrollable_frame(parent: tk.Widget) -> tk.Frame:
+        viewport = tk.Frame(parent, bg=PANEL)
+        viewport.pack(fill="both", expand=True)
+        canvas = tk.Canvas(viewport, bg=PANEL, highlightthickness=0, borderwidth=0)
+        scrollbar = ttk.Scrollbar(viewport, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        content = tk.Frame(canvas, bg=PANEL, padx=12, pady=10)
+        window = canvas.create_window((0, 0), window=content, anchor="nw")
+
+        def update_scroll_region(_event: object = None) -> None:
+            bounds = canvas.bbox("all")
+            if bounds:
+                canvas.configure(scrollregion=bounds)
+
+        def fit_content_width(event: tk.Event) -> None:
+            canvas.itemconfigure(window, width=event.width)
+
+        def scroll(event: tk.Event, direction: int) -> str | None:
+            if not content.winfo_exists():
+                return None
+            widget = canvas.winfo_containing(event.x_root, event.y_root)
+            while widget is not None:
+                if widget == content:
+                    canvas.yview_scroll(direction, "units")
+                    return "break"
+                parent = widget.winfo_parent()
+                if not parent:
+                    break
+                widget = widget.nametowidget(parent)
+            return None
+
+        def scroll_with_wheel(event: tk.Event) -> str | None:
+            return scroll(event, -1 if event.delta > 0 else 1)
+
+        content.bind("<Configure>", update_scroll_region)
+        canvas.bind("<Configure>", fit_content_width)
+        canvas.bind_all("<MouseWheel>", scroll_with_wheel, add="+")
+        canvas.bind_all("<Button-4>", lambda event: scroll(event, -1), add="+")
+        canvas.bind_all("<Button-5>", lambda event: scroll(event, 1), add="+")
+        return content
+
     def _build_overview(self) -> None:
         page = self.pages["overview"]
         heading = self._page_heading(page, "Command center", "MARINE ARENA COMPANION")
@@ -636,9 +690,9 @@ class NativeWorkspace:
             ("score", "Score samples"), ("units", "Units & upgrades"),
             ("build", "Build order"), ("graphs", "Graphs"),
         ):
-            content = tk.Frame(self.replay_detail_tabs, bg=PANEL, padx=12, pady=10)
-            self.replay_detail_tabs.add(content, text=label)
-            self.replay_detail_views[key] = content
+            viewport = tk.Frame(self.replay_detail_tabs, bg=PANEL)
+            self.replay_detail_tabs.add(viewport, text=label)
+            self.replay_detail_views[key] = self._scrollable_frame(viewport)
 
     def _build_players(self) -> None:
         page = self.pages["players"]
@@ -1109,7 +1163,7 @@ class NativeWorkspace:
             content = tk.Frame(frame, bg=PANEL)
             content.pack(fill="x")
             tk.Label(
-                content, text=_display_name(report.get("display_name", f"Player {report.get('player_id')}")),
+                content, text=_report_player_label(report, include_slot=True),
                 bg=PANEL, fg=CYAN, font=("Segoe UI Semibold", 10),
             ).pack(anchor="w", pady=(0, 7))
             data = report.get(section, {})
@@ -1197,9 +1251,18 @@ class NativeWorkspace:
         notebook.pack(fill="both", expand=True)
         for report in reports:
             frame = tk.Frame(notebook, bg=PANEL, padx=8, pady=8)
-            notebook.add(frame, text=_display_name(report.get("display_name", "Player")))
-            tree = self._tree(frame, (("time", "TIME", 90), ("category", "TYPE", 120), ("item", "ITEM", 280), ("supply", "SUPPLY", 90)), 9)
-            tree.pack(fill="both", expand=True)
+            notebook.add(frame, text=_report_player_label(report, include_slot=True))
+            table_frame = tk.Frame(frame, bg=PANEL)
+            table_frame.pack(fill="both", expand=True)
+            tree = self._tree(
+                table_frame,
+                (("time", "TIME", 90), ("category", "TYPE", 120), ("item", "ITEM", 280), ("supply", "SUPPLY", 90)),
+                12,
+            )
+            scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
+            tree.configure(yscrollcommand=scrollbar.set)
+            tree.pack(side="left", fill="both", expand=True)
+            scrollbar.pack(side="right", fill="y")
             for item in report.get("build_order", []):
                 tree.insert("", "end", values=(
                     _duration(item.get("time_seconds")),
@@ -1229,7 +1292,7 @@ class NativeWorkspace:
         canvases = {}
         for report in reports:
             sub = tk.Frame(graph_reports, bg=PANEL)
-            graph_reports.add(sub, text=_display_name(report.get("display_name", "Player")))
+            graph_reports.add(sub, text=_report_player_label(report, include_slot=True))
             chart = tk.Canvas(sub, height=190, bg=PANEL_SOFT, highlightthickness=0)
             chart.pack(fill="both", expand=True)
             canvases[report["player_id"]] = (chart, report.get("graphs", {}))

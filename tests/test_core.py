@@ -21,6 +21,7 @@ from marine_arena_companion.config import (
     validate_replay_folder,
 )
 from marine_arena_companion.db.repository import Repository, SCHEMA_VERSION
+from marine_arena_companion.desktop.workspace import _report_player_label
 from marine_arena_companion.instance import ProfileInstanceLock
 from marine_arena_companion.main import _select_local_profile
 from marine_arena_companion.replay.hashing import sha256_file
@@ -97,6 +98,15 @@ def test_battle_tag_matches_recorded_name_history(tmp_path: Path) -> None:
     assert repository.player_ids_for_battle_tag("OldName#1234") == [player_id]
     assert repository.player_ids_for_battle_tag("CurrentName#1234") == [player_id]
     assert repository.player_ids_for_battle_tag("OtherName#1234") == []
+
+
+def test_replay_report_tabs_use_player_names_and_slots() -> None:
+    assert _report_player_label(
+        {"display_name": "Mülltonne", "slot": 2}, include_slot=True,
+    ) == "Mülltonne · S2"
+    assert _report_player_label(
+        {"display_name": "Unknown", "slot": 3}, include_slot=True,
+    ) == "Player in slot 3 · S3"
 
 
 def test_readiness_waits_for_stable_mpq_header(tmp_path: Path) -> None:
