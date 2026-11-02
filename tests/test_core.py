@@ -318,6 +318,7 @@ def test_identity_prefers_toon_and_does_not_merge_name_only_players() -> None:
 def test_battlenet_name_format_splits_clan_and_removes_sp_markup() -> None:
     assert split_player_name("<L4GNDS><sp/>StЯям") == ("L4GNDS", "StЯям")
     assert split_player_name("Player<sp/>Two") == (None, "Player Two")
+    assert split_player_name("&lt;MGR&gt; TbF") == (None, "<MGR> TbF")
 
 
 def test_version_three_database_backfills_player_user_ids(tmp_path: Path) -> None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import tkinter as tk
 from datetime import datetime
 from tkinter import messagebox, ttk
@@ -151,7 +152,7 @@ class NativeWorkspace:
         style.configure("CardValue.TLabel", background=PANEL, foreground=CYAN, font=("Segoe UI Semibold", 23))
         style.configure(
             "TButton", background="#10243a", foreground=TEXT,
-            padding=(11, 8), font=("Segoe UI Semibold", 9), borderwidth=0,
+            padding=(13, 9), font=("Segoe UI Semibold", 9), borderwidth=0,
         )
         style.map(
             "TButton",
@@ -160,7 +161,7 @@ class NativeWorkspace:
         )
         style.configure(
             "Primary.TButton", background="#075482", foreground="#f2fbff",
-            padding=(11, 8), font=("Segoe UI Semibold", 9), borderwidth=0,
+            padding=(13, 9), font=("Segoe UI Semibold", 9), borderwidth=0,
         )
         style.map(
             "Primary.TButton",
@@ -178,7 +179,7 @@ class NativeWorkspace:
         )
         style.configure(
             "Treeview", background=PANEL_SOFT, fieldbackground=PANEL_SOFT,
-            foreground=TEXT, rowheight=29, borderwidth=0, font=("Segoe UI", 9),
+            foreground=TEXT, rowheight=31, borderwidth=0, font=("Segoe UI", 9),
         )
         style.configure(
             "Treeview.Heading", background="#0d2942", foreground="#9dc9e5",
@@ -199,7 +200,7 @@ class NativeWorkspace:
         )
         style.configure(
             "TNotebook.Tab", background="#0a1a2b", foreground=MUTED,
-            padding=(12, 8), font=("Segoe UI", 9),
+            padding=(14, 9), font=("Segoe UI", 9),
         )
         style.map(
             "TNotebook.Tab",
@@ -209,7 +210,7 @@ class NativeWorkspace:
         style.configure(
             "TEntry", fieldbackground="#071321", foreground=TEXT,
             selectbackground="#12608b", selectforeground="#ffffff",
-            padding=7, borderwidth=1,
+            padding=9, borderwidth=0,
         )
         style.map(
             "TEntry",
@@ -219,7 +220,7 @@ class NativeWorkspace:
         style.configure(
             "TCombobox", fieldbackground="#071321", foreground=TEXT,
             selectbackground="#071321", selectforeground=TEXT,
-            arrowcolor=CYAN, padding=6, borderwidth=1,
+            arrowcolor=CYAN, padding=8, borderwidth=0,
         )
         style.map(
             "TCombobox",
@@ -386,8 +387,50 @@ class NativeWorkspace:
         return heading
 
     @staticmethod
-    def _panel(parent: tk.Widget, *, padx: int = 15, pady: int = 13) -> tk.Frame:
-        return tk.Frame(parent, bg=PANEL, highlightbackground=LINE, highlightthickness=1, padx=padx, pady=pady)
+    def _surface(
+        parent: tk.Widget,
+        fill: str,
+        *,
+        padx: int = 15,
+        pady: int = 13,
+        radius: int = 13,
+    ) -> tk.Frame:
+        outer = tk.Frame(parent, bg=parent.cget("bg"), padx=padx, pady=pady)
+        canvas = tk.Canvas(
+            outer, bg=parent.cget("bg"), bd=0, highlightthickness=0,
+        )
+        canvas.place(x=0, y=0, relwidth=1, relheight=1)
+
+        def draw(_event: object = None) -> None:
+            width, height = canvas.winfo_width(), canvas.winfo_height()
+            if width < 2 or height < 2:
+                return
+            curve = min(radius, width / 2, height / 2)
+            points: list[float] = []
+            for center_x, center_y, start in (
+                (width - curve, curve, -90),
+                (width - curve, height - curve, 0),
+                (curve, height - curve, 90),
+                (curve, curve, 180),
+            ):
+                for step in range(7):
+                    angle = math.radians(start + step * 15)
+                    points.extend((
+                        center_x + curve * math.cos(angle),
+                        center_y + curve * math.sin(angle),
+                    ))
+            canvas.delete("surface")
+            canvas.create_polygon(
+                *points, fill=fill, outline=LINE, width=1,
+                smooth=True, splinesteps=12, tags="surface",
+            )
+
+        canvas.bind("<Configure>", draw)
+        return outer
+
+    @classmethod
+    def _panel(cls, parent: tk.Widget, *, padx: int = 15, pady: int = 13) -> tk.Frame:
+        return cls._surface(parent, PANEL, padx=padx, pady=pady)
 
     @staticmethod
     def _tree(parent: tk.Widget, columns: tuple[tuple[str, str, int], ...], height: int = 8) -> ttk.Treeview:
@@ -1201,7 +1244,7 @@ class NativeWorkspace:
             ("Recorded APM", _recorded(profile.get("average_apm")), f"Approximate · {profile.get('apm_games', 0)} game(s)"),
             ("Recorded results", str(profile.get("recorded_results", 0)), f"of {detail.get('all_time_games', 0)} games"),
         ):
-            card = tk.Frame(header, bg=PANEL_SOFT, highlightbackground=LINE, highlightthickness=1, padx=10, pady=8)
+            card = self._surface(header, PANEL_SOFT, padx=10, pady=8, radius=10)
             card.pack(side="left", fill="both", expand=True, padx=(0, 6))
             tk.Label(card, text=label.upper(), bg=PANEL_SOFT, fg=MUTED, font=("Segoe UI Semibold", 7)).pack(anchor="w")
             tk.Label(card, text=value, bg=PANEL_SOFT, fg=CYAN, font=("Segoe UI Semibold", 17)).pack(anchor="w", pady=(4, 1))
@@ -1209,7 +1252,7 @@ class NativeWorkspace:
         units = tk.Frame(units_target, bg=PANEL)
         units.pack(fill="x")
         for title, key in (("Most deployed", "top_units"), ("Upgrades recorded", "top_upgrades")):
-            section = tk.Frame(units, bg=PANEL_SOFT, highlightbackground=LINE, highlightthickness=1, padx=10, pady=8)
+            section = self._surface(units, PANEL_SOFT, padx=10, pady=8, radius=10)
             section.pack(side="left", fill="both", expand=True, padx=(0, 6))
             tk.Label(section, text=title, bg=PANEL_SOFT, fg=TEXT, font=("Segoe UI Semibold", 8)).pack(anchor="w")
             entries = [f"{item['name']} · {item['count']}" for item in profile.get(key, [])]
@@ -1232,7 +1275,7 @@ class NativeWorkspace:
         ):
             self._key_value(maps, label, value)
         map_history = profile.get("map_history", [])
-        map_panel = tk.Frame(maps_target, bg=PANEL_SOFT, highlightbackground=LINE, highlightthickness=1, padx=10, pady=8)
+        map_panel = self._surface(maps_target, PANEL_SOFT, padx=10, pady=8, radius=10)
         map_panel.pack(fill="x", pady=(0, 8))
         tk.Label(map_panel, text="Maps played", bg=PANEL_SOFT, fg=TEXT, font=("Segoe UI Semibold", 8)).pack(anchor="w")
         tk.Label(
@@ -1243,7 +1286,7 @@ class NativeWorkspace:
         ).pack(anchor="w", pady=(6, 0))
         names = detail.get("name_history", [])
         if names:
-            history = tk.Frame(maps_target, bg=PANEL_SOFT, highlightbackground=LINE, highlightthickness=1, padx=10, pady=8)
+            history = self._surface(maps_target, PANEL_SOFT, padx=10, pady=8, radius=10)
             history.pack(fill="x", pady=(0, 8))
             tk.Label(history, text="Name history", bg=PANEL_SOFT, fg=TEXT, font=("Segoe UI Semibold", 8)).pack(anchor="w")
             for name in names[:6]:

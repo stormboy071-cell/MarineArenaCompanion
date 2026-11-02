@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+from html import unescape
 import re
 import uuid
 
 
 def split_player_name(value: object) -> tuple[str | None, str]:
-    name = str(value or "Unknown").strip() or "Unknown"
+    name = unescape(str(value or "Unknown")).strip() or "Unknown"
     clan = None
     clan_match = re.match(r"^<([^<>]+)><sp/>(.*)$", name, re.IGNORECASE)
     if clan_match:
