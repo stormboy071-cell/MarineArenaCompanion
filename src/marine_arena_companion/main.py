@@ -41,12 +41,9 @@ def _configure_logging(data_dir: Path) -> None:
 def _select_local_profile(base_dir: Path) -> str | None:
     profiles = local_profile_tags(base_dir)
     root = tk.Tk()
-    root.withdraw()
-    dialog = tk.Toplevel(root)
-    dialog.title("Choose a profile · Marine Arena Companion")
-    dialog.configure(bg="#09111a")
-    dialog.resizable(False, False)
-    dialog.transient(root)
+    root.title("Choose a profile · Marine Arena Companion")
+    root.configure(bg="#09111a")
+    root.resizable(False, False)
     result: dict[str, str | None] = {"tag": None}
     selected = tk.StringVar(value=profiles[0] if profiles else "")
     new_tag = tk.StringVar()
@@ -54,9 +51,8 @@ def _select_local_profile(base_dir: Path) -> str | None:
 
     def finish(tag: str | None) -> None:
         result["tag"] = tag
-        if dialog.winfo_exists():
-            dialog.grab_release()
-            dialog.destroy()
+        if root.winfo_exists():
+            root.destroy()
 
     def open_selected() -> None:
         try:
@@ -72,7 +68,7 @@ def _select_local_profile(base_dir: Path) -> str | None:
             error.set(str(exc))
             entry.focus_set()
 
-    shell = tk.Frame(dialog, bg="#09111a", highlightbackground="#416975", highlightthickness=1)
+    shell = tk.Frame(root, bg="#09111a", highlightbackground="#416975", highlightthickness=1)
     shell.pack(fill="both", expand=True)
     header = tk.Frame(shell, bg="#11232c", padx=25, pady=20)
     header.pack(fill="x")
@@ -151,19 +147,20 @@ def _select_local_profile(base_dir: Path) -> str | None:
         activeforeground="#ffffff", relief="flat", borderwidth=0,
         font=("Segoe UI Semibold", 9), padx=17, pady=9, cursor="hand2",
     ).pack(side="left")
-    dialog.bind("<Return>", lambda _event: add_profile())
-    dialog.bind("<Escape>", lambda _event: finish(None))
-    dialog.protocol("WM_DELETE_WINDOW", lambda: finish(None))
-    dialog.geometry("560x390")
-    dialog.update_idletasks()
-    x = (dialog.winfo_screenwidth() - dialog.winfo_reqwidth()) // 2
-    y = (dialog.winfo_screenheight() - dialog.winfo_reqheight()) // 2
-    dialog.geometry(f"560x390+{x}+{y}")
-    dialog.grab_set()
+    root.bind("<Return>", lambda _event: add_profile())
+    root.bind("<Escape>", lambda _event: finish(None))
+    root.protocol("WM_DELETE_WINDOW", lambda: finish(None))
+    root.geometry("560x390")
+    root.update_idletasks()
+    x = (root.winfo_screenwidth() - root.winfo_reqwidth()) // 2
+    y = (root.winfo_screenheight() - root.winfo_reqheight()) // 2
+    root.geometry(f"560x390+{x}+{y}")
+    root.deiconify()
+    root.lift()
+    root.focus_force()
     if not profiles:
         entry.focus_set()
-    root.wait_window(dialog)
-    root.destroy()
+    root.mainloop()
     return result["tag"]
 
 
