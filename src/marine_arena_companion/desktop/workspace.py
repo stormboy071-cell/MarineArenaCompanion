@@ -11,13 +11,13 @@ from marine_arena_companion.config import validate_battle_tag
 from marine_arena_companion.timing import format_elapsed_time, parse_elapsed_time
 
 
-BG = "#050d18"
-SIDEBAR = "#07111e"
-PANEL = "#09182a"
-PANEL_SOFT = "#071321"
-LINE = "#123553"
-LINE_STRONG = "#1a5277"
-CYAN = "#5bd6ff"
+BG = "#030a13"
+SIDEBAR = "#06101c"
+PANEL = "#08182a"
+PANEL_SOFT = "#050f1b"
+LINE = "#124875"
+LINE_STRONG = "#167ac2"
+CYAN = "#53c9ff"
 GREEN = "#62dfb0"
 AMBER = "#ffd166"
 RED = "#ff8290"
@@ -152,7 +152,7 @@ class NativeWorkspace:
         style.configure("CardValue.TLabel", background=PANEL, foreground=CYAN, font=("Segoe UI Semibold", 23))
         style.configure(
             "TButton", background="#10243a", foreground=TEXT,
-            padding=(13, 9), font=("Segoe UI Semibold", 9), borderwidth=0,
+            padding=(13, 9), font=("Segoe UI Semibold", 9), borderwidth=1, relief="flat",
         )
         style.map(
             "TButton",
@@ -161,7 +161,7 @@ class NativeWorkspace:
         )
         style.configure(
             "Primary.TButton", background="#075482", foreground="#f2fbff",
-            padding=(13, 9), font=("Segoe UI Semibold", 9), borderwidth=0,
+            padding=(13, 9), font=("Segoe UI Semibold", 9), borderwidth=1, relief="flat",
         )
         style.map(
             "Primary.TButton",
@@ -179,11 +179,12 @@ class NativeWorkspace:
         )
         style.configure(
             "Treeview", background=PANEL_SOFT, fieldbackground=PANEL_SOFT,
-            foreground=TEXT, rowheight=31, borderwidth=0, font=("Segoe UI", 9),
+            foreground="#c9e8ff", rowheight=32, borderwidth=0, relief="flat",
+            bordercolor=LINE, lightcolor="#0d3658", darkcolor=LINE, font=("Segoe UI", 9),
         )
         style.configure(
-            "Treeview.Heading", background="#0d2942", foreground="#9dc9e5",
-            font=("Segoe UI Semibold", 8), padding=(9, 8), borderwidth=0,
+            "Treeview.Heading", background="#0b2d4d", foreground="#6fcaff",
+            font=("Segoe UI Semibold", 8), padding=(10, 9), borderwidth=0, relief="flat",
         )
         style.map(
             "Treeview.Heading",
@@ -195,22 +196,28 @@ class NativeWorkspace:
             background=[("selected", "#07517b")],
             foreground=[("selected", "#ffffff")],
         )
+        style.layout("Treeview", [("Treeview.treearea", {"sticky": "nswe"})])
         style.configure(
-            "TNotebook", background=BG, borderwidth=0,
+            "TNotebook", background=BG, borderwidth=1, relief="flat",
+            bordercolor=LINE, lightcolor="#0d4f7e", darkcolor="#08233d",
         )
         style.configure(
-            "TNotebook.Tab", background="#0a1a2b", foreground=MUTED,
-            padding=(14, 9), font=("Segoe UI", 9),
+            "TNotebook.Tab", background="#07182a", foreground="#79aed2",
+            padding=(14, 10), font=("Segoe UI Semibold", 9), borderwidth=1,
+            bordercolor="#12527f", lightcolor="#167ac2", darkcolor="#08233d",
         )
         style.map(
             "TNotebook.Tab",
             background=[("selected", "#0c3b5d"), ("active", "#123653")],
             foreground=[("selected", "#e7f8ff"), ("active", "#ffffff")],
+            bordercolor=[("selected", CYAN), ("active", "#1683ca")],
         )
         style.configure(
             "TEntry", fieldbackground="#071321", foreground=TEXT,
             selectbackground="#12608b", selectforeground="#ffffff",
-            padding=9, borderwidth=0,
+            padding=9, borderwidth=1, relief="flat",
+            bordercolor=LINE, lightcolor="#0b3558", darkcolor="#08233d",
+            focuscolor=CYAN,
         )
         style.map(
             "TEntry",
@@ -220,7 +227,9 @@ class NativeWorkspace:
         style.configure(
             "TCombobox", fieldbackground="#071321", foreground=TEXT,
             selectbackground="#071321", selectforeground=TEXT,
-            arrowcolor=CYAN, padding=8, borderwidth=0,
+            arrowcolor=CYAN, padding=8, borderwidth=1, relief="flat",
+            bordercolor=LINE, lightcolor="#0b3558", darkcolor="#08233d",
+            focuscolor=CYAN,
         )
         style.map(
             "TCombobox",
@@ -254,17 +263,20 @@ class NativeWorkspace:
         elif self._hovered_nav_key == key:
             self._hovered_nav_key = None
         if hovering:
-            background, foreground = "#15517b", "#ffffff"
+            background, foreground, edge = "#0c3556", "#ffffff", "#1589d3"
         elif self.current_page == key:
-            background, foreground = "#0c3b5d", "#e7f8ff"
+            background, foreground, edge = "#0b3b64", "#e7f8ff", CYAN
         else:
-            background, foreground = SIDEBAR, "#b7cde0"
-        button.configure(bg=background, fg=foreground)
+            background, foreground, edge = SIDEBAR, "#a9c5df", SIDEBAR
+        button.configure(
+            bg=background, fg=foreground, highlightbackground=edge,
+            highlightcolor=CYAN, highlightthickness=1 if hovering or self.current_page == key else 0,
+        )
 
     def _build_shell(self) -> None:
         self.root.geometry("1180x790")
         self.root.minsize(940, 650)
-        shell = tk.Frame(self.root, bg=BG)
+        shell = tk.Frame(self.root, bg=BG, highlightbackground="#0b4d7e", highlightthickness=1)
         shell.pack(fill="both", expand=True)
         sidebar = tk.Frame(shell, bg=SIDEBAR, width=220, highlightbackground=LINE, highlightthickness=1)
         sidebar.pack(side="left", fill="y")
@@ -302,6 +314,7 @@ class NativeWorkspace:
                 bg=SIDEBAR, fg="#b7cde0", activebackground="#174c73",
                 activeforeground="#ffffff", relief="flat", borderwidth=0, anchor="w",
                 padx=16, pady=10, font=("Segoe UI", 9), cursor="hand2",
+                highlightthickness=0, highlightbackground=LINE, highlightcolor=CYAN,
             )
             button.pack(fill="x", padx=8, pady=2)
             button.bind("<Enter>", lambda _event, page=key: self._set_nav_hover(page, True))
@@ -317,6 +330,7 @@ class NativeWorkspace:
                 bg=SIDEBAR, fg="#b7cde0", activebackground="#174c73",
                 activeforeground="#ffffff", relief="flat", borderwidth=0, anchor="w",
                 padx=16, pady=10, font=("Segoe UI", 9), cursor="hand2",
+                highlightthickness=0, highlightbackground=LINE, highlightcolor=CYAN,
             )
             button.pack(fill="x", padx=8, pady=2)
             button.bind("<Enter>", lambda _event, page=key: self._set_nav_hover(page, True))
@@ -336,22 +350,23 @@ class NativeWorkspace:
 
         workspace = tk.Frame(shell, bg=BG)
         workspace.pack(side="left", fill="both", expand=True)
-        topbar = tk.Frame(workspace, bg="#0b121b", height=57, highlightbackground=LINE, highlightthickness=1)
+        topbar = tk.Frame(workspace, bg="#071426", height=57, highlightbackground=LINE, highlightthickness=1)
         topbar.pack(fill="x")
         topbar.pack_propagate(False)
         self.heading_var = tk.StringVar(value="Overview")
         tk.Label(
-            topbar, text="MARINE ARENA COMPANION", bg="#0b121b", fg="#8193a3",
+            topbar, text="MARINE ARENA COMPANION", bg="#071426", fg="#83aac9",
             font=("Segoe UI", 8),
         ).pack(side="left", padx=(24, 12))
-        tk.Frame(topbar, bg=LINE_STRONG, width=1, height=19).pack(side="left", padx=4)
+        tk.Frame(topbar, bg=CYAN, width=2, height=21).pack(side="left", padx=5)
         tk.Label(
-            topbar, textvariable=self.heading_var, bg="#0b121b", fg=TEXT,
+            topbar, textvariable=self.heading_var, bg="#071426", fg=TEXT,
             font=("Segoe UI Semibold", 10),
         ).pack(side="left", padx=10)
         self.watcher_badge = tk.Label(
-            topbar, textvariable=self.watcher_state_var, bg="#102124", fg=GREEN,
-            font=("Segoe UI Semibold", 8), padx=10, pady=4,
+            topbar, textvariable=self.watcher_state_var, bg="#0a2432", fg=GREEN,
+            font=("Segoe UI Semibold", 8), padx=12, pady=5,
+            highlightbackground="#18745f", highlightthickness=1,
         )
         self.watcher_badge.pack(side="right", padx=(8, 20))
         self.pages_host = tk.Frame(workspace, bg=BG)
@@ -405,24 +420,41 @@ class NativeWorkspace:
             width, height = canvas.winfo_width(), canvas.winfo_height()
             if width < 2 or height < 2:
                 return
-            curve = min(radius, width / 2, height / 2)
-            points: list[float] = []
-            for center_x, center_y, start in (
-                (width - curve, curve, -90),
-                (width - curve, height - curve, 0),
-                (curve, height - curve, 90),
-                (curve, curve, 180),
-            ):
-                for step in range(7):
-                    angle = math.radians(start + step * 15)
-                    points.extend((
-                        center_x + curve * math.cos(angle),
-                        center_y + curve * math.sin(angle),
-                    ))
+            cut = min(radius, width / 8, height / 8)
+
+            def chamfer(inset: float) -> tuple[float, ...]:
+                edge = max(2, cut - inset)
+                return (
+                    inset + edge, inset,
+                    width - inset - edge, inset,
+                    width - inset, inset + edge,
+                    width - inset, height - inset - edge,
+                    width - inset - edge, height - inset,
+                    inset + edge, height - inset,
+                    inset, height - inset - edge,
+                    inset, inset + edge,
+                )
+
             canvas.delete("surface")
             canvas.create_polygon(
-                *points, fill=fill, outline=LINE, width=1,
-                smooth=True, splinesteps=12, tags="surface",
+                *chamfer(1), fill=fill, outline="#0c4e80", width=2,
+                tags="surface",
+            )
+            canvas.create_polygon(
+                *chamfer(4), fill="", outline="#123a5e", width=1,
+                tags="surface",
+            )
+            canvas.create_line(
+                cut + 10, 2, width * 0.72, 2,
+                fill="#1683ca", width=2, tags="surface",
+            )
+            canvas.create_line(
+                2, cut + 10, 2, height * 0.38,
+                fill="#0b5288", width=1, tags="surface",
+            )
+            canvas.create_line(
+                width * 0.68, height - 2, width - cut - 8, height - 2,
+                fill="#0b5288", width=1, tags="surface",
             )
 
         canvas.bind("<Configure>", draw)
@@ -436,6 +468,8 @@ class NativeWorkspace:
     def _tree(parent: tk.Widget, columns: tuple[tuple[str, str, int], ...], height: int = 8) -> ttk.Treeview:
         keys = tuple(item[0] for item in columns)
         tree = ttk.Treeview(parent, columns=keys, show="headings", height=height, selectmode="browse")
+        tree.tag_configure("row-even", background="#061321")
+        tree.tag_configure("row-odd", background="#081a2b")
         for key, label, width in columns:
             tree.heading(key, text=label)
             tree.column(key, width=width, minwidth=60, anchor="w", stretch=True)
@@ -443,9 +477,9 @@ class NativeWorkspace:
 
     def _build_overview(self) -> None:
         page = self.pages["overview"]
-        heading = self._page_heading(page, "A clearer view of your games.", "YOUR REPLAY DESK")
+        heading = self._page_heading(page, "Command center", "MARINE ARENA COMPANION")
         tk.Label(
-            heading, text="Explore replay history, player profiles, and your match reminders.",
+            heading, text="Your replay library, match records, and player insights.",
             bg=BG, fg=MUTED, font=("Segoe UI", 9),
         ).pack(anchor="w", pady=(4, 0))
         actions = tk.Frame(heading, bg=BG)
@@ -454,9 +488,32 @@ class NativeWorkspace:
         ttk.Button(actions, text="Choose replay folder", command=self.app._select_folder).pack(side="left", padx=4)
         body = tk.Frame(page, bg=BG)
         body.pack(fill="both", expand=True, padx=24, pady=(0, 15))
+        identity = self._panel(body, padx=10, pady=7)
+        identity.pack(fill="x", pady=(0, 10))
+        avatar = tk.Label(
+            identity, text="MA", bg="#0b3452", fg="#76d9ff",
+            font=("Segoe UI Semibold", 12), width=5, height=2,
+            highlightbackground="#176ba2", highlightthickness=1,
+        )
+        avatar.pack(side="left", padx=(0, 10))
+        profile_text = tk.Frame(identity, bg=PANEL)
+        profile_text.pack(side="left", fill="x", expand=True)
+        self.overview_profile_var = tk.StringVar(value="Player profile")
+        tk.Label(
+            profile_text, textvariable=self.overview_profile_var, bg=PANEL, fg=TEXT,
+            font=("Segoe UI Semibold", 12),
+        ).pack(anchor="w")
+        tk.Label(
+            profile_text, text="LOCAL REPLAY PROFILE · DATA STAYS ON THIS DEVICE",
+            bg=PANEL, fg="#72bce9", font=("Segoe UI Semibold", 7),
+        ).pack(anchor="w", pady=(3, 0))
+        tk.Label(
+            identity, text="REPLAY DESK", bg=PANEL, fg=CYAN,
+            font=("Segoe UI Semibold", 8), padx=10,
+        ).pack(side="right")
         self.metric_vars = {}
         cards = tk.Frame(body, bg=BG)
-        cards.pack(fill="x", pady=(0, 12))
+        cards.pack(fill="x", pady=(0, 10))
         for index, (key, label, accent) in enumerate((
             ("replays", "REPLAYS IN LIBRARY", CYAN),
             ("marine", "MARINE ARENA MAPS", GREEN),
@@ -466,13 +523,13 @@ class NativeWorkspace:
             card = self._panel(cards, padx=14, pady=11)
             card.grid(row=0, column=index, sticky="ew", padx=(0 if index == 0 else 8, 0))
             cards.columnconfigure(index, weight=1)
-            tk.Label(card, text=label, bg=PANEL, fg=MUTED, font=("Segoe UI Semibold", 7)).pack(anchor="w")
+            tk.Label(card, text=label, bg=PANEL, fg="#8cb8d8", font=("Segoe UI Semibold", 8)).pack(anchor="w")
             value = tk.StringVar(value="—")
             self.metric_vars[key] = value
             tk.Label(card, textvariable=value, bg=PANEL, fg=accent, font=("Segoe UI Semibold", 22)).pack(anchor="w", pady=(3, 0))
-        status = self._panel(body, padx=16, pady=12)
-        status.pack(fill="x", pady=(0, 12))
-        tk.Label(status, text="REPLAY LIBRARY", bg=PANEL, fg=CYAN, font=("Segoe UI Semibold", 8)).pack(anchor="w")
+        status = self._panel(body, padx=14, pady=9)
+        status.pack(fill="x", pady=(0, 10))
+        tk.Label(status, text="LIBRARY STATUS", bg=PANEL, fg=CYAN, font=("Segoe UI Semibold", 8)).pack(anchor="w")
         self.status_var = tk.StringVar(value="Starting local services…")
         tk.Label(status, textvariable=self.status_var, bg=PANEL, fg=TEXT, font=("Segoe UI", 10), anchor="w").pack(fill="x", pady=(7, 3))
         self.folder_var = tk.StringVar(value="Replay folder not configured")
@@ -481,22 +538,54 @@ class NativeWorkspace:
         tk.Label(status, textvariable=self.progress_var, bg=PANEL, fg=MUTED, font=("Segoe UI", 8), anchor="w").pack(fill="x", pady=(6, 0))
         section = tk.Frame(body, bg=BG)
         section.pack(fill="both", expand=True)
-        left = self._panel(section)
-        left.pack(side="left", fill="both", expand=True, padx=(0, 7))
-        right = self._panel(section)
-        right.pack(side="left", fill="both", expand=True, padx=(7, 0))
-        tk.Label(left, text="Recent replays", bg=PANEL, fg=TEXT, font=("Segoe UI Semibold", 11)).pack(anchor="w", pady=(0, 9))
-        self.recent_tree = self._tree(left, (("filename", "REPLAY", 210), ("map", "MAP", 155), ("status", "STATUS", 135)), height=7)
+        menu = self._panel(section, padx=10, pady=11)
+        menu.pack(side="left", fill="y", padx=(0, 8))
+        menu.configure(width=218)
+        menu.pack_propagate(False)
+        tk.Label(
+            menu, text="REPLAY DESK", bg=PANEL, fg="#6fcaff",
+            font=("Segoe UI Semibold", 8),
+        ).pack(fill="x", anchor="w", padx=8, pady=(1, 6))
+        tk.Frame(menu, bg=LINE, height=1).pack(fill="x", padx=5, pady=(0, 6))
+        self.overview_nav_buttons: dict[str, tk.Button] = {}
+        for key, label in (
+            ("overview", "Profile summary"),
+            ("replays", "Match history"),
+            ("players", "Players"),
+            ("reminders", "Overlay reminders"),
+            ("health", "Library health"),
+        ):
+            button = tk.Button(
+                menu, text=label, anchor="w",
+                command=lambda page_key=key: self.show_page(page_key),
+                bg="#0b3b64" if key == "overview" else PANEL,
+                fg=TEXT if key == "overview" else "#a9c5df",
+                activebackground="#104d7d", activeforeground="#ffffff",
+                relief="flat", borderwidth=0, padx=10, pady=7,
+                font=("Segoe UI Semibold", 9), cursor="hand2",
+                highlightthickness=1 if key == "overview" else 0,
+                highlightbackground=CYAN, highlightcolor=CYAN,
+            )
+            button.pack(fill="x", pady=3)
+            self.overview_nav_buttons[key] = button
+        right = self._panel(section, padx=12, pady=11)
+        right.pack(side="left", fill="both", expand=True)
+        list_heading = tk.Frame(right, bg=PANEL)
+        list_heading.pack(fill="x", pady=(0, 8))
+        tk.Label(
+            list_heading, text="MATCH HISTORY", bg=PANEL, fg=TEXT,
+            font=("Segoe UI Semibold", 11),
+        ).pack(side="left")
+        tk.Label(
+            list_heading, text="RECENTLY ADDED", bg=PANEL, fg="#73bce8",
+            font=("Segoe UI Semibold", 7),
+        ).pack(side="right", padx=(0, 5))
+        self.recent_tree = self._tree(right, (
+            ("filename", "REPLAY", 175), ("map", "MAP NAME", 145),
+            ("status", "ANALYSIS", 115), ("added", "ADDED", 110),
+        ), height=9)
         self.recent_tree.pack(fill="both", expand=True)
         self.recent_tree.bind("<Double-1>", lambda _event: self.open_selected_recent())
-        tk.Label(right, text="Quick actions", bg=PANEL, fg=TEXT, font=("Segoe UI Semibold", 11)).pack(anchor="w", pady=(0, 9))
-        for label, action in (
-            ("Browse replay library", lambda: self.show_page("replays")),
-            ("View player profiles", lambda: self.show_page("players")),
-            ("Manage overlay reminders", lambda: self.show_page("reminders")),
-            ("Open game overlay", self.app._open_game_overlay),
-        ):
-            ttk.Button(right, text=label, command=action).pack(fill="x", pady=4)
 
     def _build_replays(self) -> None:
         page = self.pages["replays"]
@@ -560,9 +649,10 @@ class NativeWorkspace:
         for key, label in (("mine", "My profile"), ("opponents", "Opponents")):
             button = tk.Button(
                 sections, text=label, command=lambda value=key: self.show_player_section(value),
-                bg=PANEL_SOFT, fg=TEXT, activebackground="#18313a", activeforeground=TEXT,
+                bg=PANEL_SOFT, fg=TEXT, activebackground="#104d7d", activeforeground=TEXT,
                 relief="flat", borderwidth=0, padx=14, pady=8,
                 font=("Segoe UI Semibold", 9), cursor="hand2",
+                highlightthickness=1, highlightbackground=LINE, highlightcolor=CYAN,
             )
             button.pack(side="left", padx=(0, 6))
             self.player_section_buttons[key] = button
@@ -577,7 +667,7 @@ class NativeWorkspace:
         self._build_my_profile()
         self._build_opponents()
         self.my_profile_page.tkraise()
-        self.player_section_buttons["mine"].configure(bg="#18313a")
+        self.player_section_buttons["mine"].configure(bg="#0b3b64", highlightbackground=CYAN)
 
     def _build_my_profile(self) -> None:
         panel = self._panel(self.my_profile_page, padx=15, pady=13)
@@ -629,7 +719,18 @@ class NativeWorkspace:
         self.opponent_tree.pack(fill="both", expand=True)
         self.opponent_tree.bind("<<TreeviewSelect>>", lambda _event: self._show_opponent())
         self.opponent_title = tk.StringVar(value="Select a player")
-        tk.Label(right, textvariable=self.opponent_title, bg=PANEL, fg=TEXT, font=("Segoe UI Semibold", 13)).pack(anchor="w", pady=(2, 9))
+        opponent_header = tk.Frame(right, bg=PANEL)
+        opponent_header.pack(fill="x", pady=(0, 7))
+        self.opponent_avatar = tk.StringVar(value="SC")
+        tk.Label(
+            opponent_header, textvariable=self.opponent_avatar, bg="#0b3452", fg="#76d9ff",
+            font=("Segoe UI Semibold", 10), width=4, height=2,
+            highlightbackground="#176ba2", highlightthickness=1,
+        ).pack(side="left", padx=(0, 9))
+        tk.Label(
+            opponent_header, textvariable=self.opponent_title, bg=PANEL, fg=TEXT,
+            font=("Segoe UI Semibold", 13),
+        ).pack(side="left", anchor="center")
         self.opponent_detail_tabs = ttk.Notebook(right)
         self.opponent_detail_tabs.pack(fill="both", expand=True)
         self.opponent_summary = tk.Frame(self.opponent_detail_tabs, bg=PANEL, padx=8, pady=8)
@@ -790,6 +891,15 @@ class NativeWorkspace:
         for page_key in self.nav_buttons:
             self._set_nav_hover(page_key, page_key == self._hovered_nav_key)
         if key == "overview":
+            for overview_key, button in self.overview_nav_buttons.items():
+                active = overview_key == key
+                button.configure(
+                    bg="#0b3b64" if active else PANEL,
+                    fg=TEXT if active else "#a9c5df",
+                    highlightbackground=CYAN if active else PANEL,
+                    highlightthickness=1 if active else 0,
+                )
+        if key == "overview":
             self.refresh_overview()
         elif key == "replays":
             self._reload_replays()
@@ -836,6 +946,13 @@ class NativeWorkspace:
             self.refresh_overview()
 
     def refresh_overview(self) -> None:
+        battle_tag = self.config.get().battle_tag
+        if battle_tag:
+            player_name, _, discriminator = battle_tag.partition("#")
+            profile_name = f"{_display_name(player_name)}  ·  #{discriminator}"
+        else:
+            profile_name = "Player profile not configured"
+        self.overview_profile_var.set(profile_name)
         items = self.repository.list_replays(8)
         signature = tuple(
             (
@@ -850,13 +967,19 @@ class NativeWorkspace:
         self._fill_tree(self.recent_tree, items, lambda item: (
             item["filename"], _map_name(item["map_name"], item["map_classification"]),
             STATUS_LABELS.get(item["decode_status"], item["decode_status"]),
+            self._date(item.get("imported_at")),
         ))
 
     @staticmethod
     def _fill_tree(tree: ttk.Treeview, rows: list[dict[str, Any]], values: Callable[[dict[str, Any]], tuple[Any, ...]]) -> None:
         tree.delete(*tree.get_children())
-        for row in rows:
-            tree.insert("", "end", iid=str(row.get("id", row.get("replay_id", row.get("player_id", row.get("filename"))))), values=values(row))
+        for index, row in enumerate(rows):
+            tree.insert(
+                "", "end",
+                iid=str(row.get("id", row.get("replay_id", row.get("player_id", row.get("filename"))))),
+                values=values(row),
+                tags=("row-even" if index % 2 == 0 else "row-odd",),
+            )
 
     def open_selected_recent(self) -> None:
         selected = self.recent_tree.selection()
@@ -1121,7 +1244,11 @@ class NativeWorkspace:
     def show_player_section(self, section: str) -> None:
         self.player_section = section
         for key, button in self.player_section_buttons.items():
-            button.configure(bg="#18313a" if key == section else PANEL_SOFT)
+            active = key == section
+            button.configure(
+                bg="#0b3b64" if active else PANEL_SOFT,
+                highlightbackground=CYAN if active else LINE,
+            )
         (self.my_profile_page if section == "mine" else self.opponents_page).tkraise()
         self.refresh_players()
 
@@ -1196,6 +1323,7 @@ class NativeWorkspace:
             self._show_opponent()
         elif not items:
             self.opponent_title.set("No other players found")
+            self.opponent_avatar.set("—")
             for target in (self.opponent_summary, self.opponent_units, self.opponent_maps):
                 self._clear(target)
             self.opponent_match_tree.delete(*self.opponent_match_tree.get_children())
@@ -1210,6 +1338,9 @@ class NativeWorkspace:
         if not profile:
             return
         self.opponent_title.set(profile["display_name"])
+        self.opponent_avatar.set(
+            "".join(part[0] for part in profile["display_name"].split()[:2]).upper() or "SC",
+        )
         for target in (self.opponent_summary, self.opponent_units, self.opponent_maps):
             self._clear(target)
         self._render_profile_sections(
@@ -1238,14 +1369,19 @@ class NativeWorkspace:
         )
         header = tk.Frame(performance_target, bg=PANEL)
         header.pack(fill="x", pady=(0, 8))
-        for label, value, note in (
+        for index, (label, value, note) in enumerate((
             ("Games analyzed", str(detail.get("all_time_games", 0)), "Matches in the replay library"),
             ("Win rate", _recorded(profile.get("win_rate"), "%"), outcomes),
             ("Recorded APM", _recorded(profile.get("average_apm")), f"Approximate · {profile.get('apm_games', 0)} game(s)"),
             ("Recorded results", str(profile.get("recorded_results", 0)), f"of {detail.get('all_time_games', 0)} games"),
-        ):
-            card = self._surface(header, PANEL_SOFT, padx=10, pady=8, radius=10)
-            card.pack(side="left", fill="both", expand=True, padx=(0, 6))
+        )):
+            card = self._surface(header, PANEL_SOFT, padx=9, pady=7, radius=10)
+            card.grid(
+                row=index // 2, column=index % 2, sticky="nsew",
+                padx=(0, 5 if index % 2 == 0 else 0),
+                pady=(0, 5 if index // 2 == 0 else 0),
+            )
+            header.grid_columnconfigure(index % 2, weight=1)
             tk.Label(card, text=label.upper(), bg=PANEL_SOFT, fg=MUTED, font=("Segoe UI Semibold", 7)).pack(anchor="w")
             tk.Label(card, text=value, bg=PANEL_SOFT, fg=CYAN, font=("Segoe UI Semibold", 17)).pack(anchor="w", pady=(4, 1))
             tk.Label(card, text=note, bg=PANEL_SOFT, fg=MUTED, font=("Segoe UI", 7), wraplength=150).pack(anchor="w")
